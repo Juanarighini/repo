@@ -148,20 +148,31 @@ async function saveRainData(data) {
   }
 }
 
+// Verificar si es un nuevo día y reiniciar el acumulador si es necesario
 async function resetRainAccumulationIfNewDay() {
   const rainData = await loadRainData();
-  const currentDate = moment().tz("America/Argentina/Buenos_Aires").format("YYYY-MM-DD");
+  const currentDate = moment()
+    .tz("America/Argentina/Buenos_Aires")
+    .format("YYYY-MM-DD");
 
   if (rainData.lastResetDate !== currentDate) {
     const newData = {
       rainAccumulation: 0,
       lastResetDate: currentDate,
-      lastAccumulatedTime: null,
     };
     await saveRainData(newData);
     console.log("📅 Acumulación de lluvia reseteada automáticamente.");
+  } else {
+    console.log("✔️ Acumulación de lluvia ya reseteada hoy.");
   }
 }
+
+// Cron para reset diario a las 00:00
+cron.schedule("0 0 * * *", async () => {
+  await resetRainAccumulationIfNewDay();
+  console.log("⏰ Tarea programada: reset automático ejecutado.");
+});
+
 
 app.get("/weather/all", async (req, res) => {
   try {

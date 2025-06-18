@@ -320,7 +320,7 @@ app.get("/getRiegoEstado", async (req, res) => {
 });
 
 // Endpoint para modificar estadoRiego (0 a 4)
-app.get("/setEstadoRiego", async (req, res) => {
+app.get("/setRiegoEstado", async (req, res) => {
   try {
     const nuevoEstado = parseInt(req.query.estado, 10);
     if (![0, 1, 2, 3, 4].includes(nuevoEstado)) {

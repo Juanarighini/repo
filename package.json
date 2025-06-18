@@ -1,0 +1,19 @@
+{
+  "name": "weather-server",
+  "version": "1.0.0",
+  "description": "Servidor para sintetizar datos de Tomorrow.io",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "axios": "^1.10.0",
+    "express": "^5.1.0",
+    "moment-timezone": "^0.6.0",
+    "node-cron": "^4.1.0",
+    "ntp-client": "^0.5.3"
+  },
+  "engines": {
+    "node": "16.x"
+  }
+}

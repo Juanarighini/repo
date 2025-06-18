@@ -266,13 +266,13 @@ async function getSheets() {
   return google.sheets({ version: "v4", auth: client });
 }
 
-// Cargar estado riego desde Google Sheets (celda A5)
+// Cargar estado riego desde Google Sheets (celda B4)
 async function cargarEstado() {
   try {
     const sheets = await getSheets();
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
-      range: `${SHEET_NAME}!A5`,
+      range: `${SHEET_NAME}!B4`,
     });
 
     const rows = response.data.values;
@@ -288,24 +288,26 @@ async function cargarEstado() {
   return 0;
 }
 
-// Guardar estado riego en Google Sheets (celda A5)
-async function guardarEstado(nuevoEstado) {
+// Cargar estado riego desde Google Sheets (celda B4)
+async function cargarEstado() {
   try {
-    if (![0, 1, 2, 3, 4].includes(nuevoEstado)) {
-      throw new Error("Estado no válido para guardar");
-    }
     const sheets = await getSheets();
-    await sheets.spreadsheets.values.update({
+    const response = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
-      range: `${SHEET_NAME}!A5`,
-      valueInputOption: "USER_ENTERED",
-      requestBody: {
-        values: [[nuevoEstado]],
-      },
+      range: `${SHEET_NAME}!B4`,
     });
+
+    const rows = response.data.values;
+    if (rows && rows.length > 0 && rows[0][0] !== undefined) {
+      const estado = parseInt(rows[0][0], 10);
+      if ([0, 1, 2, 3, 4].includes(estado)) {
+        return estado;
+      }
+    }
   } catch (error) {
-    console.error("Error al guardar el estado en Google Sheets:", error);
+    console.error("Error al cargar el estado desde Google Sheets:", error);
   }
+  return 0;
 }
 
 // Endpoint para obtener estadoRiego

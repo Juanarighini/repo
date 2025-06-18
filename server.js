@@ -322,7 +322,7 @@ app.get("/getRiegoEstado", async (req, res) => {
 // Endpoint para modificar estadoRiego (0 a 4)
 app.get("/setRiegoEstado", async (req, res) => {
   try {
-    const nuevoEstado = parseInt(req.query.estado, 10);
+    const nuevoEstado = parseInt(req.query.riego_estado, 10);
     if (![0, 1, 2, 3, 4].includes(nuevoEstado)) {
       return res.status(400).json({ error: "Estado inválido" });
     }

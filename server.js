@@ -5,7 +5,7 @@ const fs = require("fs");
 const cron = require("node-cron"); // Importar node-cron
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 1000;
 
 const API_KEY = "lZY6Z1jCDicjqKVzuePasf6QIDVAJWnt";
 const BASE_URL = "https://api.tomorrow.io/v4/weather/forecast";

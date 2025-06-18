@@ -8,7 +8,7 @@ const { google } = require("googleapis");
 const app = express();
 const PORT = process.env.PORT || 1000;
 
-const API_KEY = process.env.APIKEY;  // O usa JSON.parse si guardaste el string con comillas
+const API_KEY = process.env.APIKEY;  // Usar JSON.parse(process.env.APIKEY) si guardaste el string con comillas
 const BASE_URL = "https://api.tomorrow.io/v4/weather/forecast";
 
 const ubicacion = "-33.4976173,-64.3157374"; // ejemplo San Basilio
@@ -311,8 +311,8 @@ async function guardarEstado(nuevoEstado) {
 // Endpoint para obtener estadoRiego
 app.get("/getEstadoRiego", async (req, res) => {
   try {
-    const rainData = await loadRainData();
-    res.json({ estado_riego: rainData.estadoRiego });
+    const estado = await cargarEstado();
+    res.json({ estado_riego: estado });
   } catch (error) {
     console.error("Error leyendo estado de riego:", error);
     res.status(500).json({ error: "Error leyendo estado de riego" });
@@ -326,9 +326,7 @@ app.get("/setEstadoRiego", async (req, res) => {
     if (![0, 1, 2, 3, 4].includes(nuevoEstado)) {
       return res.status(400).json({ error: "Estado inválido" });
     }
-    const rainData = await loadRainData();
-    rainData.estadoRiego = nuevoEstado;
-    await saveRainData(rainData);
+    await guardarEstado(nuevoEstado);
     res.json({ message: "Estado del riego actualizado correctamente." });
   } catch (error) {
     console.error("Error actualizando estado de riego:", error);
@@ -340,3 +338,4 @@ app.get("/setEstadoRiego", async (req, res) => {
 app.listen(PORT, () => {
   console.log(`Servidor ejecutándose en http://localhost:${PORT}`);
 });
+

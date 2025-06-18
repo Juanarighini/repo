@@ -309,7 +309,7 @@ async function guardarEstado(nuevoEstado) {
 }
 
 // Endpoint para obtener estadoRiego
-app.get("/getEstadoRiego", async (req, res) => {
+app.get("/getRiegoEstado", async (req, res) => {
   try {
     const estado = await cargarEstado();
     res.json({ estado_riego: estado });

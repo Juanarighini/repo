@@ -308,21 +308,31 @@ async function guardarEstado(nuevoEstado) {
   }
 }
 
-// Endpoint para obtener estado de riego
-app.get("/getRiegoEstado", async (req, res) => {
-  const estado = await cargarEstado();
-  res.json({ estado_riego: estado });
+// Endpoint para obtener estadoRiego
+app.get("/getEstadoRiego", async (req, res) => {
+  try {
+    const rainData = await loadRainData();
+    res.json({ estado_riego: rainData.estadoRiego });
+  } catch (error) {
+    console.error("Error leyendo estado de riego:", error);
+    res.status(500).json({ error: "Error leyendo estado de riego" });
+  }
 });
 
-// Endpoint para actualizar estado de riego
-app.get("/setRiegoEstado", async (req, res) => {
-  const estado = parseInt(req.query.riego_estado, 10);
-
-  if ([0, 1, 2, 3, 4].includes(estado)) {
-    await guardarEstado(estado);
+// Endpoint para modificar estadoRiego (0 a 4)
+app.get("/setEstadoRiego", async (req, res) => {
+  try {
+    const nuevoEstado = parseInt(req.query.estado, 10);
+    if (![0, 1, 2, 3, 4].includes(nuevoEstado)) {
+      return res.status(400).json({ error: "Estado inválido" });
+    }
+    const rainData = await loadRainData();
+    rainData.estadoRiego = nuevoEstado;
+    await saveRainData(rainData);
     res.json({ message: "Estado del riego actualizado correctamente." });
-  } else {
-    res.status(400).json({ error: "Estado no válido" });
+  } catch (error) {
+    console.error("Error actualizando estado de riego:", error);
+    res.status(500).json({ error: "Error actualizando estado de riego" });
   }
 });
 

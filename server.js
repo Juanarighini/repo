@@ -91,6 +91,9 @@ async function resetRainAccumulationIfNewDay() {
     const newData = {
       rainAccumulation: 0,
       lastResetDate: currentDate,
+      lastAccumulatedTime: moment()
+        .tz("America/Argentina/Buenos_Aires")
+        .format("YYYY-MM-DDTHH:mm:ss"),
     };
     await saveRainData(newData);
     console.log("📅 Acumulación de lluvia reseteada automáticamente.");

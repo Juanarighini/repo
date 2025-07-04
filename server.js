@@ -352,7 +352,7 @@ app.get("/programacion-riego", async (req, res) => {
 
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: "1KXmQgN2oS-ewSkBJMSHYz5nPQH3R56jScuJ8Vhye4bkD",
-      range: `hoja1!${rango}`, // Asegurate de que "hoja1" sea el nombre correcto
+      range: `hoja1!${A1:H16}`, // Asegurate de que "hoja1" sea el nombre correcto
     });
 
     const values = response.data.values || [];

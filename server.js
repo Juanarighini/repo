@@ -347,27 +347,56 @@ function obtenerEstacionYRango() {
 //Endpoint para obtener programación de riego según estación
 app.get("/programacion-riego", async (req, res) => {
   try {
-    const { rango, estacion } = obtenerEstacionYRango();
-    const sheets = await getSheets();
+    // Obtener día de la semana (0=domingo, 1=lunes, ..., 6=sábado)
+    const diaSemana = new Date().getDay();
 
+    // Mapeo para columnas B=1, C=2 ... H=7 para lunes a domingo
+    // Pero JavaScript domingo=0 y en hoja domingo está en H (col 7)
+    let colIndex;
+    if (diaSemana === 0) colIndex = 7; // domingo = H
+    else colIndex = diaSemana;          // lunes=1=B, martes=2=C, etc.
+
+    // Detectar estación para definir rango
+    const mes = new Date().getMonth() + 1; // Enero=1 ... Diciembre=12
+    const dia = new Date().getDate();
+
+    let rango;
+
+    if ((mes === 12 && dia >= 21) || mes === 1 || mes === 2 || (mes === 3 && dia <= 20)) {
+      // Verano
+      rango = "hoja1!B3:H4";
+    } else if ((mes === 3 && dia >= 21) || mes === 4 || (mes === 5 && dia <= 20)) {
+      // Otoño
+      rango = "hoja1!B7:H8";
+    } else if ((mes === 5 && dia >= 21) || mes === 6 || mes === 7 || mes === 8 || (mes === 9 && dia <= 20)) {
+      // Invierno
+      rango = "hoja1!B11:H12";
+    } else {
+      // Primavera
+      rango = "hoja1!B15:H16";
+    }
+
+    const sheets = await getSheets();
     const response = await sheets.spreadsheets.values.get({
-      spreadsheetId: "1KXmQgN2oS-ewSkBJMSHYz5nPQH3R56jScuJ8Vhye4bk",
-      range: `hoja1!A1:H20`, 
+      spreadsheetId: "1KXmQgN2oS-ewSkBJMSHYz5nPQH3R56jScuJ8Vhye4bkD",
+      range: rango,
     });
 
     const values = response.data.values || [];
 
-    if (values.length < 4) {
-      return res.status(400).json({ error: "Datos incompletos en la hoja" });
+    if (values.length < 2) {
+      return res.status(400).json({ error: "Datos insuficientes en la hoja" });
     }
 
-    const dias = values[2].slice(1); // Fila "Días de Riego", sin encabezado
-    const hora = values[3][1] || ""; // Fila "Hora de Riego", segunda celda (columna B)
+    // values[0] = fila de días (1 o 0)
+    // values[1] = fila de horas (ej: "07:00")
+
+    const dia_riego = values[0][colIndex - 1] || "0";  // colIndex-1 porque el rango empieza en B (col 1)
+    const hora_riego = values[1][colIndex - 1] || "";
 
     res.json({
-      estacion,
-      dias_riego: dias.map(d => d.toLowerCase()),
-      hora_riego: hora,
+      dia_riego,
+      hora_riego,
     });
 
   } catch (error) {
@@ -375,6 +404,7 @@ app.get("/programacion-riego", async (req, res) => {
     res.status(500).json({ error: "Error al obtener programación de riego" });
   }
 });
+
 
 
 // Iniciar servidor

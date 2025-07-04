@@ -378,7 +378,7 @@ app.get("/programacion-riego", async (req, res) => {
 
     const sheets = await getSheets();
     const response = await sheets.spreadsheets.values.get({
-      spreadsheetId: "1KXmQgN2oS-ewSkBJMSHYz5nPQH3R56jScuJ8Vhye4bkD",
+      spreadsheetId: "1KXmQgN2oS-ewSkBJMSHYz5nPQH3R56jScuJ8Vhye4bk",
       range: rango,
     });
 

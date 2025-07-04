@@ -8,10 +8,10 @@ const { google } = require("googleapis");
 const app = express();
 const PORT = process.env.PORT || 1000;
 
-const API_KEY = process.env.APIKEY;  // Usar JSON.parse(process.env.APIKEY) si guardaste el string con comillas
+const API_KEY = process.env.APIKEY; 
 const BASE_URL = "https://api.tomorrow.io/v4/weather/forecast";
 
-const ubicacion = "-33.4976173,-64.3157374"; // ejemplo San Basilio
+const ubicacion = "-33.4976173,-64.3157374"; //San Basilio
 
 const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS);
 const SPREADSHEET_ID = "16cVvdsQvRXh9lCScY05N4AW0Cs_PwhkSBpUN-CA50LY";
@@ -91,9 +91,6 @@ async function resetRainAccumulationIfNewDay() {
     const newData = {
       rainAccumulation: 0,
       lastResetDate: currentDate,
-      lastAccumulatedTime: moment()
-        .tz("America/Argentina/Buenos_Aires")
-        .format("YYYY-MM-DDTHH:mm:ss"),
     };
     await saveRainData(newData);
     console.log("📅 Acumulación de lluvia reseteada automáticamente.");
@@ -269,13 +266,13 @@ async function getSheets() {
   return google.sheets({ version: "v4", auth: client });
 }
 
-// Cargar estado riego desde Google Sheets (celda B4)
+// Cargar estado riego desde Google Sheets (celda A5)
 async function cargarEstado() {
   try {
     const sheets = await getSheets();
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
-      range: `${SHEET_NAME}!B4`,
+      range: `${SHEET_NAME}!A5`,
     });
 
     const rows = response.data.values;
@@ -291,7 +288,7 @@ async function cargarEstado() {
   return 0;
 }
 
-// Guardar estado riego en Google Sheets (celda B4)
+// Guardar estado riego en Google Sheets (celda A5)
 async function guardarEstado(nuevoEstado) {
   try {
     if (![0, 1, 2, 3, 4].includes(nuevoEstado)) {
@@ -300,7 +297,7 @@ async function guardarEstado(nuevoEstado) {
     const sheets = await getSheets();
     await sheets.spreadsheets.values.update({
       spreadsheetId: SPREADSHEET_ID,
-      range: `${SHEET_NAME}!B4`,
+      range: `${SHEET_NAME}!A5`,
       valueInputOption: "USER_ENTERED",
       requestBody: {
         values: [[nuevoEstado]],
@@ -311,34 +308,76 @@ async function guardarEstado(nuevoEstado) {
   }
 }
 
-// Endpoint para obtener estadoRiego
+// Endpoint para obtener estado de riego
 app.get("/getRiegoEstado", async (req, res) => {
-  try {
-    const estado = await cargarEstado();
-    res.json({ estado_riego: estado });
-  } catch (error) {
-    console.error("Error leyendo estado de riego:", error);
-    res.status(500).json({ error: "Error leyendo estado de riego" });
+  const estado = await cargarEstado();
+  res.json({ estado_riego: estado });
+});
+
+// Endpoint para actualizar estado de riego
+app.get("/setRiegoEstado", async (req, res) => {
+  const estado = parseInt(req.query.riego_estado, 10);
+
+  if ([0, 1, 2, 3, 4].includes(estado)) {
+    await guardarEstado(estado);
+    res.json({ message: "Estado del riego actualizado correctamente." });
+  } else {
+    res.status(400).json({ error: "Estado no válido" });
   }
 });
 
-// Endpoint para modificar estadoRiego (0 a 4)
-app.get("/setRiegoEstado", async (req, res) => {
+
+//Detectar estación actual y rango de celdas
+function obtenerEstacionYRango() {
+  const now = moment().tz("America/Argentina/Buenos_Aires");
+  const month = now.month(); // 0 = enero, ..., 11 = diciembre
+  const day = now.date();
+
+  if ((month === 11 && day >= 21) || [0, 1].includes(month) || (month === 2 && day <= 20)) {
+    return { estacion: "verano", rango: "A1:H4" };
+  } else if ((month === 2 && day >= 21) || [3, 4].includes(month) || (month === 5 && day <= 20)) {
+    return { estacion: "otoño", rango: "A5:H8" };
+  } else if ((month === 5 && day >= 21) || [6, 7].includes(month) || (month === 8 && day <= 20)) {
+    return { estacion: "invierno", rango: "A9:H12" };
+  } else {
+    return { estacion: "primavera", rango: "A13:H16" };
+  }
+}
+
+//Endpoint para obtener programación de riego según estación
+app.get("/programacion-riego", async (req, res) => {
   try {
-    const nuevoEstado = parseInt(req.query.riego_estado, 10);
-    if (![0, 1, 2, 3, 4].includes(nuevoEstado)) {
-      return res.status(400).json({ error: "Estado inválido" });
+    const { rango, estacion } = obtenerEstacionYRango();
+    const sheets = await getSheets();
+
+    const response = await sheets.spreadsheets.values.get({
+    spreadsheetId: "1KXmQgN2oS-ewSkBJMSHYz5nPQH3R56jScuJ8Vhye4bkD",
+    range: `hoja1!${rango}`,
+    });
+
+    const values = response.data.values || [];
+
+    if (values.length < 4) {
+      return res.status(400).json({ error: "Datos incompletos en la hoja" });
     }
-    await guardarEstado(nuevoEstado);
-    res.json({ message: "Estado del riego actualizado correctamente." });
+
+    const dias = values[2].slice(1); // Fila "Días de Riego", sin encabezado
+    const hora = values[3][1] || ""; // Fila "Hora de Riego", segunda celda (columna B)
+
+    res.json({
+      estacion,
+      dias_riego: dias.map(d => d.toLowerCase()),
+      hora_riego: hora,
+    });
+
   } catch (error) {
-    console.error("Error actualizando estado de riego:", error);
-    res.status(500).json({ error: "Error actualizando estado de riego" });
+    console.error("Error al obtener programación de riego:", error);
+    res.status(500).json({ error: "Error al obtener programación de riego" });
   }
 });
+
 
 // Iniciar servidor
 app.listen(PORT, () => {
   console.log(`Servidor ejecutándose en http://localhost:${PORT}`);
 });
-

@@ -327,53 +327,28 @@ app.get("/setRiegoEstado", async (req, res) => {
 });
 
 
-//Detectar estación actual y rango de celdas
-function obtenerEstacionYRango() {
-  const now = moment().tz("America/Argentina/Buenos_Aires");
-  const month = now.month(); // 0 = enero, ..., 11 = diciembre
-  const day = now.date();
-
-  if ((month === 11 && day >= 21) || [0, 1].includes(month) || (month === 2 && day <= 20)) {
-    return { estacion: "verano", rango: "A1:H4" };
-  } else if ((month === 2 && day >= 21) || [3, 4].includes(month) || (month === 5 && day <= 20)) {
-    return { estacion: "otoño", rango: "A5:H8" };
-  } else if ((month === 5 && day >= 21) || [6, 7].includes(month) || (month === 8 && day <= 20)) {
-    return { estacion: "invierno", rango: "A9:H12" };
-  } else {
-    return { estacion: "primavera", rango: "A13:H16" };
-  }
-}
-
-//Endpoint para obtener programación de riego según estación
 app.get("/programacion-riego", async (req, res) => {
   try {
-    // Obtener día de la semana (0=domingo, 1=lunes, ..., 6=sábado)
+    // Día de la semana actual: 0=Domingo, ..., 6=Sábado
     const diaSemana = new Date().getDay();
 
-    // Mapeo para columnas B=1, C=2 ... H=7 para lunes a domingo
-    // Pero JavaScript domingo=0 y en hoja domingo está en H (col 7)
-    let colIndex;
-    if (diaSemana === 0) colIndex = 7; // domingo = H
-    else colIndex = diaSemana;          // lunes=1=B, martes=2=C, etc.
+    // Mapeo: índice en la fila de la hoja (lunes=B=0, ..., domingo=H=6)
+    const mapaColumna = [6, 0, 1, 2, 3, 4, 5];
+    const colIndex = mapaColumna[diaSemana];
 
-    // Detectar estación para definir rango
+    // Fecha actual
     const mes = new Date().getMonth() + 1; // Enero=1 ... Diciembre=12
     const dia = new Date().getDate();
 
     let rango;
-
     if ((mes === 12 && dia >= 21) || mes === 1 || mes === 2 || (mes === 3 && dia <= 20)) {
-      // Verano
-      rango = "hoja1!B3:H4";
+      rango = "hoja1!B3:H4"; // Verano
     } else if ((mes === 3 && dia >= 21) || mes === 4 || (mes === 5 && dia <= 20)) {
-      // Otoño
-      rango = "hoja1!B7:H8";
+      rango = "hoja1!B7:H8"; // Otoño
     } else if ((mes === 5 && dia >= 21) || mes === 6 || mes === 7 || mes === 8 || (mes === 9 && dia <= 20)) {
-      // Invierno
-      rango = "hoja1!B11:H12";
+      rango = "hoja1!B11:H12"; // Invierno
     } else {
-      // Primavera
-      rango = "hoja1!B15:H16";
+      rango = "hoja1!B15:H16"; // Primavera
     }
 
     const sheets = await getSheets();
@@ -388,11 +363,8 @@ app.get("/programacion-riego", async (req, res) => {
       return res.status(400).json({ error: "Datos insuficientes en la hoja" });
     }
 
-    // values[0] = fila de días (1 o 0)
-    // values[1] = fila de horas (ej: "07:00")
-
-    const dia_riego = values[0][colIndex - 1] || "0";  // colIndex-1 porque el rango empieza en B (col 1)
-    const hora_riego = values[1][colIndex - 1] || "";
+    const dia_riego = values[0][colIndex] || "0";  // 1 o 0
+    const hora_riego = values[1][colIndex] || "";  // formato "hh:mm"
 
     res.json({
       dia_riego,

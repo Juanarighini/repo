@@ -107,7 +107,7 @@ async function resetEstadoRiegoIfNewDay() {
     // Leer la última fecha de reseteo desde B5
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
-      range: `${SHEET_NAME}!B5`,
+      range: `${test}!B5`,
     });
 
     const lastReset = response.data.values?.[0]?.[0];
@@ -116,7 +116,7 @@ async function resetEstadoRiegoIfNewDay() {
       // Si es un nuevo día, resetear estadoRiego a 0 (en B4)
       await sheets.spreadsheets.values.update({
         spreadsheetId: SPREADSHEET_ID,
-        range: `${SHEET_NAME}!B4`,
+        range: `${test}!B4`,
         valueInputOption: "USER_ENTERED",
         requestBody: {
           values: [[0]],
@@ -126,7 +126,7 @@ async function resetEstadoRiegoIfNewDay() {
       // Guardar nueva fecha de reseteo en B5
       await sheets.spreadsheets.values.update({
         spreadsheetId: SPREADSHEET_ID,
-        range: `${SHEET_NAME}!B5`,
+        range: `${test}!B5`,
         valueInputOption: "USER_ENTERED",
         requestBody: {
           values: [[currentDate]],
@@ -156,6 +156,7 @@ cron.schedule("0 0 * * *", async () => {
 app.get("/weather/all", async (req, res) => {
   try {
     await resetRainAccumulationIfNewDay();
+    await resetEstadoRiegoIfNewDay();    
     const rainData = await loadRainData();
 
     const [minutelyResponse, hourlyResponse] = await Promise.all([

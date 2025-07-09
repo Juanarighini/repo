@@ -99,10 +99,57 @@ async function resetRainAccumulationIfNewDay() {
   }
 }
 
-// Cron para reset diario a las 00:00
+async function resetEstadoRiegoIfNewDay() {
+  try {
+    const sheets = await getSheets();
+    const currentDate = moment().tz("America/Argentina/Buenos_Aires").format("YYYY-MM-DD");
+
+    // Leer la última fecha de reseteo desde B5
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId: SPREADSHEET_ID,
+      range: `${SHEET_NAME}!B5`,
+    });
+
+    const lastReset = response.data.values?.[0]?.[0];
+
+    if (lastReset !== currentDate) {
+      // Si es un nuevo día, resetear estadoRiego a 0 (en B4)
+      await sheets.spreadsheets.values.update({
+        spreadsheetId: SPREADSHEET_ID,
+        range: `${SHEET_NAME}!B4`,
+        valueInputOption: "USER_ENTERED",
+        requestBody: {
+          values: [[0]],
+        },
+      });
+
+      // Guardar nueva fecha de reseteo en B5
+      await sheets.spreadsheets.values.update({
+        spreadsheetId: SPREADSHEET_ID,
+        range: `${SHEET_NAME}!B5`,
+        valueInputOption: "USER_ENTERED",
+        requestBody: {
+          values: [[currentDate]],
+        },
+      });
+
+      console.log("🕛 estadoRiego reseteado a 0 y fecha actualizada.");
+    } else {
+      console.log("✔️ estadoRiego ya fue reseteado hoy.");
+    }
+  } catch (error) {
+    console.error("❌ Error al resetear estadoRiego:", error);
+  }
+}
+
 cron.schedule("0 0 * * *", async () => {
-  await resetRainAccumulationIfNewDay();
-  console.log("⏰ Tarea programada: reset automático ejecutado.");
+  try {
+    await resetRainAccumulationIfNewDay();
+    await resetEstadoRiegoIfNewDay();
+    console.log("⏰ Reset diario: lluvia y estadoRiego reseteados.");
+  } catch (error) {
+    console.error("❌ Error durante el reset diario:", error);
+  }
 });
 
 

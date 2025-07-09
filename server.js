@@ -272,7 +272,7 @@ async function cargarEstado() {
     const sheets = await getSheets();
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
-      range: `${SHEET_NAME}!A5`,
+      range: `${SHEET_NAME}!B4`,
     });
 
     const rows = response.data.values;

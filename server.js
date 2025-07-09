@@ -297,7 +297,7 @@ async function guardarEstado(nuevoEstado) {
     const sheets = await getSheets();
     await sheets.spreadsheets.values.update({
       spreadsheetId: SPREADSHEET_ID,
-      range: `${SHEET_NAME}!A5`,
+      range: `${SHEET_NAME}!B4`,
       valueInputOption: "USER_ENTERED",
       requestBody: {
         values: [[nuevoEstado]],

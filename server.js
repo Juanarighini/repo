@@ -378,15 +378,20 @@ app.get("/setRiegoEstado", async (req, res) => {
 app.get("/programacion-riego", async (req, res) => {
   try {
     // Día de la semana actual: 0=Domingo, ..., 6=Sábado
-    const diaSemana = new Date().getDay();
+    const ahora = moment().tz("America/Argentina/Buenos_Aires");
+    
+    // Día de la semana actual: 0=Domingo, ..., 6=Sábado
+    const diaSemana = ahora.day();
+    
+    // Fecha actual
+    const mes = ahora.month() + 1; // month() va de 0 a 11
+    const dia = ahora.date();
 
     // Mapeo: índice en la fila de la hoja (lunes=B=0, ..., domingo=H=6)
     const mapaColumna = [6, 0, 1, 2, 3, 4, 5];
     const colIndex = mapaColumna[diaSemana];
 
-    // Fecha actual
-    const mes = new Date().getMonth() + 1; // Enero=1 ... Diciembre=12
-    const dia = new Date().getDate();
+
 
     let rango;
     if ((mes === 12 && dia >= 21) || mes === 1 || mes === 2 || (mes === 3 && dia <= 20)) {
@@ -431,3 +436,4 @@ app.get("/programacion-riego", async (req, res) => {
 app.listen(PORT, () => {
   console.log(`Servidor ejecutándose en http://localhost:${PORT}`);
 });
+

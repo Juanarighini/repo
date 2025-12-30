@@ -290,10 +290,8 @@ app.get("/weather", async (req, res) => {
   }
 });
 
-const ntpClient = require("ntp-client");
-
-// Endpoint para hora NTP
-app.get("/time", (req, res) => {
+//const ntpClient = require("ntp-client");
+/*app.get("/time", (req, res) => {
   ntpClient.getNetworkTime("2.ar.pool.ntp.org", 123, (err, date) => {
     if (err) {
       console.error("Error al obtener la hora NTP:", err);
@@ -306,6 +304,18 @@ app.get("/time", (req, res) => {
 
     res.json({ time: formattedArgentinaTime });
   });
+});*/
+
+// Endpoint para hora (USANDO HORA DEL SERVIDOR, NO NTP)
+app.get("/time", (req, res) => {
+  // Obtenemos la hora del sistema en zona horaria Argentina
+  const now = moment().tz("America/Argentina/Buenos_Aires");
+  
+  // Formateamos EXACTAMENTE como lo espera tu Arduino: ISO 8601
+  // Ejemplo salida: "2025-12-30T16:15:17.140Z"
+  const formattedTime = now.format("YYYY-MM-DDTHH:mm:ss.SSS") + "Z";
+
+  res.json({ time: formattedTime });
 });
 
 // Helper para obtener sheets cliente
@@ -314,7 +324,7 @@ async function getSheets() {
   return google.sheets({ version: "v4", auth: client });
 }
 
-// Cargar estado riego desde Google Sheets (celda A5)
+// Cargar estado riego desde Google Sheets (celda B4)
 async function cargarEstado() {
   try {
     const sheets = await getSheets();
@@ -325,8 +335,17 @@ async function cargarEstado() {
 
     const rows = response.data.values;
     if (rows && rows.length > 0 && rows[0][0] !== undefined) {
-      const estado = parseInt(rows[0][0], 10);
-      if ([0, 1, 2, 3, 4].includes(estado)) {
+      let valorCelda = rows[0][0];
+      
+      // Protección contra celdas vacías o texto
+      if (!valorCelda || isNaN(valorCelda)) {
+          valorCelda = "0"; 
+      }
+      
+      const estado = parseInt(valorCelda, 10);
+      
+      // AHORA INCLUIMOS EL 5 AQUÍ
+      if ([0, 1, 2, 3, 4, 5].includes(estado)) { 
         return estado;
       }
     }
@@ -336,10 +355,10 @@ async function cargarEstado() {
   return 0;
 }
 
-// Guardar estado riego en Google Sheets (celda A5)
 async function guardarEstado(nuevoEstado) {
   try {
-    if (![0, 1, 2, 3, 4].includes(nuevoEstado)) {
+    // AHORA INCLUIMOS EL 5 AQUÍ
+    if (![0, 1, 2, 3, 4, 5].includes(nuevoEstado)) {
       throw new Error("Estado no válido para guardar");
     }
     const sheets = await getSheets();
@@ -436,5 +455,6 @@ app.get("/programacion-riego", async (req, res) => {
 app.listen(PORT, () => {
   console.log(`Servidor ejecutándose en http://localhost:${PORT}`);
 });
+
 
 

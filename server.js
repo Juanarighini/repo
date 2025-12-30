@@ -366,7 +366,7 @@ app.get("/getRiegoEstado", async (req, res) => {
 app.get("/setRiegoEstado", async (req, res) => {
   const estado = parseInt(req.query.riego_estado, 10);
 
-  if ([0, 1, 2, 3, 4].includes(estado)) {
+  if ([0, 1, 2, 3, 4, 5].includes(estado)) {
     await guardarEstado(estado);
     res.json({ message: "Estado del riego actualizado correctamente." });
   } else {
@@ -436,4 +436,5 @@ app.get("/programacion-riego", async (req, res) => {
 app.listen(PORT, () => {
   console.log(`Servidor ejecutándose en http://localhost:${PORT}`);
 });
+
 
